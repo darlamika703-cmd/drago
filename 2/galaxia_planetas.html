@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Sol del Amor - Galaxia Radiante</title>
+  <style>
+    #modal-bienvenida {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(10, 10, 30, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.7s ease;
+      backdrop-filter: blur(4px);
+    }
+    #modal-bienvenida.oculto {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #modal-bienvenida .contenido {
+      background: linear-gradient(135deg, rgba(40,20,60,0.98), rgba(20,10,40,0.98));
+      border-radius: 32px;
+      box-shadow: 0 0 60px #ff3366aa, 0 0 20px #ffaa44;
+      padding: 2.5rem 3rem;
+      text-align: center;
+      color: #fff7e8;
+      font-family: 'Great Vibes', cursive, 'Segoe UI', Arial, sans-serif;
+      font-size: 2.4rem;
+      max-width: 90vw;
+      border: 1px solid rgba(255,200,100,0.5);
+    }
+    #modal-bienvenida button {
+      margin-top: 2rem;
+      font-size: 1.6rem;
+      font-weight: bold;
+      padding: 0.9rem 2.5rem;
+      border-radius: 60px;
+      background: linear-gradient(45deg, #ff3366, #ff8844);
+      color: white;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    #modal-bienvenida button:hover {
+      transform: scale(1.03);
+      box-shadow: 0 12px 28px rgba(255,51,102,0.4);
+    }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(ellipse at bottom, #030318, #000000);
+    }
+    canvas {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    /* pequeño indicador sutil */
+    .info {
+      position: fixed;
+      bottom: 12px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: rgba(255,220,150,0.5);
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 10;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="modal-bienvenida">
+    <div class="contenido">
+      <div>✨ Toca aquí, mi amor ✨</div>
+      <button id="btn-ingresar">💖 Presiona aquí 💖</button>
+    </div>
+  </div>
+  <canvas id="galaxy-canvas"></canvas>
+  <div class="info">🌞 Gira alrededor del Sol del Amor | 🌟 Planetas brillantes 🌟</div>
+  <audio id="musica" autoplay loop preload="auto">
+    <source src="musica.mp3" type="audio/mpeg">
+  </audio>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // --- MODAL y MÚSICA ---
+    window.addEventListener('DOMContentLoaded', () => {
+      const modal = document.getElementById('modal-bienvenida');
+      const btn = document.getElementById('btn-ingresar');
+      const audio = document.getElementById('musica');
+      
+      btn.addEventListener('click', () => {
+        modal.classList.add('oculto');
+        setTimeout(() => { modal.style.display = 'none'; }, 700);
+        // Reproducir música romántica (recurso externo)
+        audio.pause();
+        audio.src = 'https://github.com/Baque2005/Organizador/raw/refs/heads/master/Emmanuel%20Cortes-%20Amor%20(Official%20Video).mp3';
+        audio.load();
+        audio.play().catch(e => console.log("Audio autoplay maybe blocked, but it's fine", e));
+      });
+    });
+
+    // --- ESCENA PRINCIPAL ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x010118);
+    scene.fog = new THREE.FogExp2(0x010118, 0.00015); // niebla suave para profundidad
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 5000);
+    const renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById('galaxy-canvas'),
+      antialias: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true; // sombras para mayor realce
+
+    // Controles suaves
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = false;
+    controls.enableZoom = true;
+    controls.zoomSpeed = 1.2;
+    controls.target.set(0, 0, 0);
+
+    // --- 🌞 SOL RADIANTE Y BRILLANTE (con emisión y luz) ---
+    // Textura del sol de alta calidad (recurso oficial threejs, brillante)
+    const sunTexture = new THREE.TextureLoader().load("https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg");
+    // Pero usaremos una textura más solar: cargamos una textura alternativa mejor para sol
+    // Creamos un material más vívido: MeshStandardMaterial + emisión
+    const sunMap = new THREE.TextureLoader().load("https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg");
+    // En su lugar usar textura propia de sol (usando una textura de sol realista desde CDN)
+    const solTextureUrl = "https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg";
+    // Reemplazar por textura de sol dorado creada con canvas? pero mejor usar una textura de sol descargable
+    // Creo una textura procedural de sol ardiente para mayor realce.
+    const canvasSol = document.createElement('canvas');
+    canvasSol.width = 1024;
+    canvasSol.height = 1024;
+    const ctxSol = canvasSol.getContext('2d');
+    ctxSol.fillStyle = '#ffaa33';
+    ctxSol.fillRect(0, 0, canvasSol.width, canvasSol.height);
+    // degradado ardiente
+    const grad = ctxSol.createRadialGradient(canvasSol.width/2, canvasSol.height/2, 0, canvasSol.width/2, canvasSol.height/2, canvasSol.width/2);
+    grad.addColorStop(0, '#ffdd99');
+    grad.addColorStop(0.3, '#ffaa44');
+    grad.addColorStop(0.6, '#ff6633');
+    grad.addColorStop(0.9, '#cc4400');
+    grad.addColorStop(1, '#882200');
+    ctxSol.fillStyle = grad;
+    ctxSol.fillRect(0, 0, canvasSol.width, canvasSol.height);
+    // agregar ruido y brillo
+    for (let i=0; i<1200; i++) {
+      ctxSol.fillStyle = `rgba(255,200,100,${Math.random() * 0.5})`;
+      const x = Math.random() * canvasSol.width;
+      const y = Math.random() * canvasSol.height;
+      ctxSol.fillRect(x, y, 3, 3);
+    }
+    const sunProceduralTex = new THREE.CanvasTexture(canvasSol);
+    
+    const sunMaterial = new THREE.MeshStandardMaterial({
+      map: sunProceduralTex,
+      emissive: new THREE.Color(0xff4422),
+      emissiveIntensity: 1.2,
+      color: 0xffaa55,
+      metalness: 0.1,
+      roughness: 0.4
+    });
+    const sun = new THREE.Mesh(new THREE.SphereGeometry(85, 128, 128), sunMaterial);
+    scene.add(sun);
+    
+    // Luz principal del sol (punto de luz intensa)
+    const sunLight = new THREE.PointLight(0xffaa66, 2.5, 3500);
+    sunLight.position.set(0, 0, 0);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
+    scene.add(sunLight);
+    
+    // Luz ambiental más brillante para que los planetas reflejen color
+    const ambientLight = new THREE.AmbientLight(0x443366, 0.55);
+    scene.add(ambientLight);
+    
+    // Luces direccionales extra para dar vida a los planetas
+    const fillLight = new THREE.DirectionalLight(0xffccaa, 0.8);
+    fillLight.position.set(1, 2, 1);
+    scene.add(fillLight);
+    
+    const backLight = new THREE.DirectionalLight(0x88aaff, 0.4);
+    backLight.position.set(-1, 1, -2);
+    scene.add(backLight);
+    
+    // 🌟 Añadir un halo de partículas alrededor del sol (efecto corona)
+    const coronaParticles = new THREE.BufferGeometry();
+    const coronaCount = 1800;
+    const coronaPositions = new Float32Array(coronaCount * 3);
+    for (let i = 0; i < coronaCount; i++) {
+      const rad = 92 + Math.random() * 18;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      coronaPositions[i*3] = rad * Math.sin(phi) * Math.cos(theta);
+      coronaPositions[i*3+1] = rad * Math.sin(phi) * Math.sin(theta);
+      coronaPositions[i*3+2] = rad * Math.cos(phi);
+    }
+    coronaParticles.setAttribute('position', new THREE.BufferAttribute(coronaPositions, 3));
+    const coronaMat = new THREE.PointsMaterial({ color: 0xffaa66, size: 0.6, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending });
+    const corona = new THREE.Points(coronaParticles, coronaMat);
+    scene.add(corona);
+    
+    // --- FRASES ROMÁNTICAS FLOTANDO (más brillantes) ---
+    const galaxyGroup = new THREE.Group();
+    scene.add(galaxyGroup);
+    
+    const frases = [
+      "❤️ Te amo infinito ❤️", "✨ Eres mi sol ✨", "💫 Mi vida entera 💫", "💖 Eres mi amor 💖", "🌹 Solo tú me completas 🌹",
+      "💋 Mi universo eres tú 💋", "♾️ Contigo siempre ♾️", "🌟 Eres mi cielo estrellado 🌟", "👑 Mi reina hermosa 👑", "🔥 Pasión eterna 🔥",
+      "💕 Mi razón de ser 💕", "🌙 Te amo más que al cosmos 🌙"
+    ];
+    
+    function crearTextoBrillante(texto) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 280;
+      const ctx = canvas.getContext('2d');
+      ctx.shadowBlur = 0;
+      // degradado neón
+      const gradiente = ctx.createLinearGradient(0, 0, canvas.width, 0);
+      gradiente.addColorStop(0, "#ff66cc");
+      gradiente.addColorStop(0.3, "#ffcc88");
+      gradiente.addColorStop(0.7, "#ffaa55");
+      gradiente.addColorStop(1, "#ff66aa");
+      ctx.font = "bold 110px 'Segoe UI', 'Arial'";
+      ctx.fillStyle = gradiente;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = "#ff66aa";
+      ctx.shadowBlur = 18;
+      ctx.fillText(texto, canvas.width / 2, canvas.height / 2);
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3;
+      ctx.strokeText(texto, canvas.width / 2, canvas.height / 2);
+      const texture = new THREE.CanvasTexture(canvas);
+      return new THREE.SpriteMaterial({ map: texture, transparent: true, blending: THREE.AdditiveBlending });
+    }
+    
+    const cantidadFrases = 70;
+    const radioFrases = 680;
+    for (let i = 0; i < cantidadFrases; i++) {
+      const frase = frases[i % frases.length];
+      const material = crearTextoBrillante(frase);
+      const sprite = new THREE.Sprite(material);
+      const angulo = (i / cantidadFrases) * Math.PI * 2;
+      const yOffset = Math.sin(i * 0.35) * 70 + (Math.random() - 0.5) * 40;
+      const radioVar = radioFrases + (Math.sin(i * 0.7) * 25);
+      sprite.position.set(Math.cos(angulo) * radioVar, yOffset, Math.sin(angulo) * radioVar);
+      sprite.scale.set(95, 26, 1);
+      galaxyGroup.add(sprite);
+    }
+    
+    // --- PLANETAS CON COLORES VIVOS Y MATERIALES REALZADOS (sin afectar animación) ---
+    // Función mejorada: texturas de colores propios para que brillen, usando texturas de alta calidad + colores intensos.
+    // Creamos texturas procedurales para dar colores únicos y brillantes a cada planeta
+    function crearTexturaPlaneta(baseColor, spotColor, hasRings = false) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+      // fondo base
+      ctx.fillStyle = baseColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // manchas y bandas brillantes
+      for (let i = 0; i < 400; i++) {
+        ctx.fillStyle = spotColor;
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const radius = Math.random() * 12 + 3;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // agregar brillos y líneas
+      ctx.strokeStyle = "rgba(255,200,100,0.7)";
+      ctx.lineWidth = 8;
+      for (let i = 0; i < 60; i++) {
+        ctx.beginPath();
+        ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+        ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+        ctx.stroke();
+      }
+      // degradado atmosférico
+      const gradRad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width/2);
+      gradRad.addColorStop(0, 'rgba(255,255,200,0.3)');
+      gradRad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradRad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      return new THREE.CanvasTexture(canvas);
+    }
+    
+    // Datos de planetas: tamaño, distancia, velocidad, colores vivos
+    const planetData = [
+      { tam: 9.5, dist: 155, vel: 0.022, colorBase: "#c97e5a", colorSpot: "#e8b07d", nombre: "Mercurio" },   // rojizo anaranjado
+      { tam: 12.5, dist: 225, vel: 0.0175, colorBase: "#e6b856", colorSpot: "#f7d98a", nombre: "Venus" },     // dorado brillante
+      { tam: 14.8, dist: 295, vel: 0.014, colorBase: "#4a9eff", colorSpot: "#7ac4ff", nombre: "Tierra" },     // azul vibrante
+      { tam: 11.2, dist: 365, vel: 0.0118, colorBase: "#cd6a3b", colorSpot: "#f5a363", nombre: "Marte" },      // rojo fuego
+      { tam: 34, dist: 475, vel: 0.0088, colorBase: "#d6b57a", colorSpot: "#f2d7a0", nombre: "Júpiter" },     // arena dorada
+      { tam: 30, dist: 590, vel: 0.007, colorBase: "#e8cf9f", colorSpot: "#ffeaaf", nombre: "Saturno" },      // amarillo pálido
+      { tam: 22, dist: 720, vel: 0.0052, colorBase: "#b0e0e6", colorSpot: "#cff5f5", nombre: "Urano" },       // azul cielo
+      { tam: 21, dist: 830, vel: 0.0042, colorBase: "#3366cc", colorSpot: "#5f8fdf", nombre: "Neptuno" }      // azul profundo
+    ];
+    
+    const planetas = [];
+    
+    // Función para agregar anillos a Saturno (efecto visual)
+    function agregarAnillos(planeta, colorAnillo) {
+      const anilloGeo = new THREE.TorusGeometry(planeta.geometry.parameters.radius * 1.28, 4.5, 64, 200);
+      const anilloMat = new THREE.MeshStandardMaterial({ color: colorAnillo, emissive: 0xccaa66, emissiveIntensity: 0.3, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+      const anillo = new THREE.Mesh(anilloGeo, anilloMat);
+      anillo.rotation.x = Math.PI / 2.2;
+      anillo.rotation.z = 0.4;
+      planeta.add(anillo);
+    }
+    
+    planetData.forEach((data, idx) => {
+      const texturaPropia = crearTexturaPlaneta(data.colorBase, data.colorSpot);
+      const materialPlaneta = new THREE.MeshStandardMaterial({
+        map: texturaPropia,
+        metalness: 0.35,
+        roughness: 0.5,
+        emissive: new THREE.Color(data.colorBase),
+        emissiveIntensity: 0.12,   // sutil brillo propio
+        color: 0xffffff
+      });
+      const planetaMesh = new THREE.Mesh(new THREE.SphereGeometry(data.tam, 128, 128), materialPlaneta);
+      planetaMesh.userData = {
+        distancia: data.dist,
+        velocidad: data.vel,
+        angulo: Math.random() * Math.PI * 2,
+        tam: data.tam
+      };
+      planetaMesh.castShadow = true;
+      planetaMesh.receiveShadow = false;
+      scene.add(planetaMesh);
+      
+      // Agregar anillos a Saturno (índice 5)
+      if (idx === 5) {
+        agregarAnillos(planetaMesh, "#eebb77");
+      }
+      // Agregar una pequeña luna o brillo extra para Júpiter
+      if (idx === 4) {
+        const brilloExtra = new THREE.PointLight(0xccaa77, 0.5, 200);
+        planetaMesh.add(brilloExtra);
+      }
+      planetas.push(planetaMesh);
+    });
+    
+    // Pequeñas partículas alrededor de los planetas para dar sensación de atmósfera (opcional)
+    const particleSystem = new THREE.BufferGeometry();
+    const particleCount = 3000;
+    const particlePositions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      particlePositions[i*3] = (Math.random() - 0.5) * 1500;
+      particlePositions[i*3+1] = (Math.random() - 0.5) * 800;
+      particlePositions[i*3+2] = (Math.random() - 0.5) * 1500;
+    }
+    particleSystem.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    const particleMat = new THREE.PointsMaterial({ color: 0xffaa88, size: 0.25, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending });
+    const dustParticles = new THREE.Points(particleSystem, particleMat);
+    scene.add(dustParticles);
+    
+    // --- ESTRELLAS DE FONDO MEJORADAS (más densidad y coloridas)---
+    const estrellasGeo = new THREE.BufferGeometry();
+    const estrellasCant = 12000;
+    const posEstrellas = new Float32Array(estrellasCant * 3);
+    const coloresEstrellas = new Float32Array(estrellasCant * 3);
+    for (let i = 0; i < estrellasCant; i++) {
+      posEstrellas[i*3] = (Math.random() - 0.5) * 7000;
+      posEstrellas[i*3+1] = (Math.random() - 0.5) * 4500;
+      posEstrellas[i*3+2] = (Math.random() - 0.5) * 6000 - 1000;
+      const colorIntensity = Math.random() * 0.8 + 0.2;
+      const colorChoice = Math.random();
+      if (colorChoice < 0.7) {
+        coloresEstrellas[i*3] = 1.0;
+        coloresEstrellas[i*3+1] = 0.9 + Math.random()*0.1;
+        coloresEstrellas[i*3+2] = 0.7 + Math.random()*0.3;
+      } else if (colorChoice < 0.85) {
+        coloresEstrellas[i*3] = 0.8 + Math.random()*0.4;
+        coloresEstrellas[i*3+1] = 0.5 + Math.random()*0.4;
+        coloresEstrellas[i*3+2] = 1.0;
+      } else {
+        coloresEstrellas[i*3] = 1.0;
+        coloresEstrellas[i*3+1] = 0.5 + Math.random()*0.4;
+        coloresEstrellas[i*3+2] = 0.6 + Math.random()*0.4;
+      }
+    }
+    estrellasGeo.setAttribute('position', new THREE.BufferAttribute(posEstrellas, 3));
+    estrellasGeo.setAttribute('color', new THREE.BufferAttribute(coloresEstrellas, 3));
+    const estrellasMatPoints = new THREE.PointsMaterial({ size: 0.55, vertexColors: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+    const estrellasField = new THREE.Points(estrellasGeo, estrellasMatPoints);
+    scene.add(estrellasField);
+    
+    // Agregar algunas estrellas centelleantes grandes (pocas)
+    const bigStarsGeo = new THREE.BufferGeometry();
+    const bigCount = 400;
+    const bigPos = new Float32Array(bigCount * 3);
+    for (let i = 0; i < bigCount; i++) {
+      bigPos[i*3] = (Math.random() - 0.5) * 4000;
+      bigPos[i*3+1] = (Math.random() - 0.5) * 2500;
+      bigPos[i*3+2] = (Math.random() - 0.5) * 3000 - 800;
+    }
+    bigStarsGeo.setAttribute('position', new THREE.BufferAttribute(bigPos, 3));
+    const bigStarsMat = new THREE.PointsMaterial({ color: 0xffdd99, size: 1.1, transparent: true, blending: THREE.AdditiveBlending });
+    const bigStars = new THREE.Points(bigStarsGeo, bigStarsMat);
+    scene.add(bigStars);
+    
+    // --- ANIMACIÓN GENERAL (manteniendo rotación de planetas y frases) ---
+    const reloj = new THREE.Clock();
+    
+    // rotación de las frases y movimiento de polvo
+    function animar() {
+      const delta = reloj.getDelta();
+      const elapsedTime = performance.now() / 1000;
+      
+      // Rotación del grupo de frases románticas lentamente
+      galaxyGroup.rotation.y = elapsedTime * 0.018;
+      galaxyGroup.rotation.x = Math.sin(elapsedTime * 0.1) * 0.05;
+      
+      // Rotación de los planetas alrededor del sol
+      planetas.forEach(p => {
+        p.userData.angulo += p.userData.velocidad;
+        const distancia = p.userData.distancia;
+        p.position.x = Math.cos(p.userData.angulo) * distancia;
+        p.position.z = Math.sin(p.userData.angulo) * distancia;
+        // Pequeña inclinación orbital en Y para dar dinamismo (sin afectar visibilidad)
+        p.position.y = Math.sin(p.userData.angulo * 1.7) * 4.5;
+        // Rotación sobre sí mismos para que se vean más reales
+        p.rotation.y += 0.01;
+      });
+      
+      // Rotación de corona solar
+      corona.rotation.y += 0.003;
+      corona.rotation.x = Math.sin(elapsedTime * 0.2) * 0.1;
+      
+      // Las estrellas grandes centellean mediante cambio de opacidad sutil
+      const intensity = 0.7 + Math.sin(elapsedTime * 2) * 0.2;
+      bigStarsMat.color.setHSL(0.12, 1.0, intensity * 0.6);
+      
+      // Hacer que las partículas de polvo se muevan levemente
+      dustParticles.rotation.y += 0.0005;
+      dustParticles.rotation.x += 0.0003;
+      
+      // Luz solar dinámica (muy leve)
+      sunLight.intensity = 2.4 + Math.sin(elapsedTime * 1.2) * 0.15;
+      
+      // actualizar controles y render
+      controls.update(); 
+      renderer.render(scene, camera);
+      requestAnimationFrame(animar);
+    }
+    
+    // Posición inicial de la cámara
+    camera.position.set(0, 180, 1050);
+    camera.lookAt(0, 0, 0);
+    controls.target.set(0, 20, 0);
+    
+    animar();
+    
+    // Manejo de resize de ventana
+    window.addEventListener('resize', onWindowResize, false);
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    
+    // Pequeño efecto adicional: crear un anillo de polvo alrededor del sol (opcional)
+    const dustRingGeo = new THREE.TorusGeometry(115, 3, 64, 300);
+    const dustRingMat = new THREE.MeshStandardMaterial({ color: 0xff8844, emissive: 0xff3311, emissiveIntensity: 0.25, transparent: true, opacity: 0.2 });
+    const dustRing = new THREE.Mesh(dustRingGeo, dustRingMat);
+    dustRing.rotation.x = Math.PI / 2.4;
+    scene.add(dustRing);
+    
+    // Agregar un pequeño brillo tipo lente (simple)
+    const starGlow = new THREE.PointLight(0xff8844, 1.2, 500);
+    starGlow.position.set(30, 25, 40);
+    scene.add(starGlow);
+    
+    console.log("✨ Universo del amor: planetas vibrantes y coloridos ✨");
+  </script>
+</body>
+</html>
